@@ -14,6 +14,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
     <!-- Custom CSS -->
     <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet">
 </head>
@@ -31,16 +33,23 @@
             <div class="container">
                 <div class="nav-content">
                     <div class="logo-section">
-                        <div class="logo-icon">
-                            <i class="bi bi-lightning-charge-fill"></i>
-                        </div>
-                        <span class="logo-text">Zerotech</span>
+                        <img src="{{ url_for('static', filename='uploads/logowhite.png') }}" alt="Zerotech Logo" class="navbar-logo">
                     </div>
                     <div class="nav-links">
+                        <span class="user-badge">
+                            <i class="bi bi-person-circle"></i>
+                            {{ user.username }}
+                        </span>
+                        {% if user.role == 'admin' %}
                         <a href="/admin" class="nav-link-custom">
                             <i class="bi bi-grid-3x3-gap-fill"></i>
-                            <span>إدارة المنتجات</span>
+                            <span>لوحة التحكم</span>
                         </a>
+                        {% endif %}
+                        <button class="nav-link-custom" onclick="logout()">
+                            <i class="bi bi-box-arrow-right"></i>
+                            <span>خروج</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -68,38 +77,58 @@
                         </div>
                         <div class="header-text">
                             <h3>توليد الكروت</h3>
-                            <p>أدخل أكواد المنتجات لتوليد كروت الأسعار</p>
+                            <p>اختر المنتجات من القائمة لتوليد كروت الأسعار</p>
                         </div>
                     </div>
                     
                     <div class="inputs-grid">
                         <div class="input-wrapper">
                             <label class="input-label">
-                                <i class="bi bi-upc-scan"></i>
-                                كود المنتج 1
+                                <i class="bi bi-box"></i>
+                                المنتج 1
                             </label>
-                            <input type="text" class="modern-input code-input" placeholder="مثال: 1001">
+                            <div class="product-select-wrapper">
+                                <select class="product-select" id="product1"></select>
+                                <button type="button" class="btn-clear-product" onclick="clearProduct(1)" title="إزالة المنتج">
+                                    <i class="bi bi-x-circle"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="input-wrapper">
                             <label class="input-label">
-                                <i class="bi bi-upc-scan"></i>
-                                كود المنتج 2
+                                <i class="bi bi-box"></i>
+                                المنتج 2
                             </label>
-                            <input type="text" class="modern-input code-input" placeholder="مثال: 1002">
+                            <div class="product-select-wrapper">
+                                <select class="product-select" id="product2"></select>
+                                <button type="button" class="btn-clear-product" onclick="clearProduct(2)" title="إزالة المنتج">
+                                    <i class="bi bi-x-circle"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="input-wrapper">
                             <label class="input-label">
-                                <i class="bi bi-upc-scan"></i>
-                                كود المنتج 3
+                                <i class="bi bi-box"></i>
+                                المنتج 3
                             </label>
-                            <input type="text" class="modern-input code-input" placeholder="مثال: 1003">
+                            <div class="product-select-wrapper">
+                                <select class="product-select" id="product3"></select>
+                                <button type="button" class="btn-clear-product" onclick="clearProduct(3)" title="إزالة المنتج">
+                                    <i class="bi bi-x-circle"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="input-wrapper">
                             <label class="input-label">
-                                <i class="bi bi-upc-scan"></i>
-                                كود المنتج 4
+                                <i class="bi bi-box"></i>
+                                المنتج 4
                             </label>
-                            <input type="text" class="modern-input code-input" placeholder="مثال: 1004">
+                            <div class="product-select-wrapper">
+                                <select class="product-select" id="product4"></select>
+                                <button type="button" class="btn-clear-product" onclick="clearProduct(4)" title="إزالة المنتج">
+                                    <i class="bi bi-x-circle"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -116,6 +145,214 @@
                             <i class="bi bi-arrow-counterclockwise"></i>
                             <span>مسح</span>
                         </button>
+                        <button id="configBtn" class="btn-modern btn-secondary-custom" data-bs-toggle="collapse" data-bs-target="#printConfig">
+                            <i class="bi bi-gear-fill"></i>
+                            <span>إعدادات الطباعة</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Print Configuration Panel -->
+                <div class="collapse" id="printConfig">
+                    <div class="glass-card config-card">
+                        <div class="card-header-custom">
+                            <div class="header-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                                <i class="bi bi-gear-fill"></i>
+                            </div>
+                            <div class="header-text">
+                                <h3>إعدادات الطباعة</h3>
+                                <p>تخصيص مظهر الكروت وحجم الصفحة</p>
+                            </div>
+                        </div>
+
+                        <div class="config-grid">
+                            <!-- Page Size -->
+                            <div class="config-section">
+                                <h4><i class="bi bi-file-earmark"></i> حجم الصفحة</h4>
+                                <div class="page-size-options">
+                                    <label class="size-option">
+                                        <input type="radio" name="pageSize" value="A4" checked>
+                                        <span>A4</span>
+                                    </label>
+                                    <label class="size-option">
+                                        <input type="radio" name="pageSize" value="A5">
+                                        <span>A5</span>
+                                    </label>
+                                    <label class="size-option">
+                                        <input type="radio" name="pageSize" value="Letter">
+                                        <span>Letter</span>
+                                    </label>
+                                    <label class="size-option">
+                                        <input type="radio" name="pageSize" value="Custom">
+                                        <span>مخصص</span>
+                                    </label>
+                                </div>
+                                <div class="custom-size-inputs" id="customSizeInputs" style="display: none;">
+                                    <div class="input-wrapper">
+                                        <label class="input-label">العرض (سم)</label>
+                                        <input type="number" class="modern-input" id="customWidth" value="21" step="0.1">
+                                    </div>
+                                    <div class="input-wrapper">
+                                        <label class="input-label">الارتفاع (سم)</label>
+                                        <input type="number" class="modern-input" id="customHeight" value="29.7" step="0.1">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card Layout Mode -->
+                            <div class="config-section">
+                                <h4><i class="bi bi-grid-3x3"></i> تخطيط الكارت</h4>
+                                <div class="card-mode-options">
+                                    <label class="mode-option">
+                                        <input type="radio" name="cardMode" value="grid" checked>
+                                        <span>شبكة (2×2)</span>
+                                    </label>
+                                    <label class="mode-option">
+                                        <input type="radio" name="cardMode" value="full">
+                                        <span>كارت واحد بالصفحة</span>
+                                    </label>
+                                </div>
+                                <div class="card-size-inputs" id="cardSizeInputs">
+                                    <div class="input-wrapper">
+                                        <label class="input-label">عرض الكارت</label>
+                                        <div class="font-size-control">
+                                            <input type="range" class="font-size-slider" id="cardWidthSlider" min="20" max="100" value="50">
+                                            <span class="font-size-value" id="cardWidthValue">50%</span>
+                                        </div>
+                                    </div>
+                                    <div class="input-wrapper">
+                                        <label class="input-label">ارتفاع الكارت</label>
+                                        <div class="font-size-control">
+                                            <input type="range" class="font-size-slider" id="cardHeightSlider" min="20" max="100" value="50">
+                                            <span class="font-size-value" id="cardHeightValue">50%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card Colors -->
+                            <div class="config-section">
+                                <h4><i class="bi bi-palette"></i> ألوان الكارت</h4>
+                                <div class="color-pickers">
+                                    <div class="input-wrapper">
+                                        <label class="input-label">اللون الأول</label>
+                                        <input type="color" class="color-input" id="colorStart" value="#1e3c72">
+                                    </div>
+                                    <div class="input-wrapper">
+                                        <label class="input-label">اللون الثاني</label>
+                                        <input type="color" class="color-input" id="colorEnd" value="#2a5298">
+                                    </div>
+                                </div>
+                                <div class="color-preview" id="colorPreview"></div>
+                            </div>
+
+                            <!-- Font Settings -->
+                            <div class="config-section">
+                                <h4><i class="bi bi-fonts"></i> إعدادات الخط</h4>
+                                <div class="input-wrapper">
+                                    <label class="input-label">حجم الخط</label>
+                                    <div class="font-size-control">
+                                        <input type="range" class="font-size-slider" id="fontSizeSlider" min="12" max="72" value="28">
+                                        <span class="font-size-value" id="fontSizeValue">28px</span>
+                                    </div>
+                                </div>
+                                <div class="input-wrapper">
+                                    <label class="input-label">لون الخط</label>
+                                    <input type="color" class="color-input" id="fontColor" value="#ffffff">
+                                </div>
+                            </div>
+
+                            <!-- Border Settings -->
+                            <div class="config-section">
+                                <h4><i class="bi bi-border-outer"></i> إطار الكارت</h4>
+                                <div class="input-wrapper">
+                                    <label class="border-toggle">
+                                        <input type="checkbox" id="borderEnabled">
+                                        <span>تفعيل الإطار</span>
+                                    </label>
+                                </div>
+                                <div class="border-options" id="borderOptions" style="display: none;">
+                                    <div class="input-wrapper">
+                                        <label class="input-label">لون الإطار</label>
+                                        <input type="color" class="color-input" id="borderColor" value="#ffffff">
+                                    </div>
+                                    <div class="input-wrapper">
+                                        <label class="input-label">سمك الإطار</label>
+                                        <div class="font-size-control">
+                                            <input type="range" class="font-size-slider" id="borderWidthSlider" min="1" max="10" value="2">
+                                            <span class="font-size-value" id="borderWidthValue">2px</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Logo Selection -->
+                            <div class="config-section">
+                                <h4><i class="bi bi-image"></i> الشعار</h4>
+                                <div class="input-wrapper">
+                                    <label class="input-label">اختر الشعار</label>
+                                    <select class="modern-input" id="logoSelect"></select>
+                                </div>
+                                <div class="input-wrapper">
+                                    <label class="input-label">حجم الشعار</label>
+                                    <div class="font-size-control">
+                                        <input type="range" class="font-size-slider" id="logoSizeSlider" min="50" max="200" value="100">
+                                        <span class="font-size-value" id="logoSizeValue">100px</span>
+                                    </div>
+                                </div>
+                                <div class="logo-preview-small" id="selectedLogoPreview"></div>
+                            </div>
+
+                            <!-- Logo Position -->
+                            <div class="config-section">
+                                <h4><i class="bi bi-arrows-move"></i> موضع الشعار</h4>
+                                <div class="position-grid">
+                                    <label class="position-option" data-position="top-left">
+                                        <input type="radio" name="logoPosition" value="top-left">
+                                        <i class="bi bi-arrow-up-left"></i>
+                                    </label>
+                                    <label class="position-option" data-position="top-center">
+                                        <input type="radio" name="logoPosition" value="top-center" checked>
+                                        <i class="bi bi-arrow-up"></i>
+                                    </label>
+                                    <label class="position-option" data-position="top-right">
+                                        <input type="radio" name="logoPosition" value="top-right">
+                                        <i class="bi bi-arrow-up-right"></i>
+                                    </label>
+                                    <label class="position-option" data-position="center-left">
+                                        <input type="radio" name="logoPosition" value="center-left">
+                                        <i class="bi bi-arrow-left"></i>
+                                    </label>
+                                    <label class="position-option" data-position="center">
+                                        <input type="radio" name="logoPosition" value="center">
+                                        <i class="bi bi-circle"></i>
+                                    </label>
+                                    <label class="position-option" data-position="center-right">
+                                        <input type="radio" name="logoPosition" value="center-right">
+                                        <i class="bi bi-arrow-right"></i>
+                                    </label>
+                                    <label class="position-option" data-position="bottom-left">
+                                        <input type="radio" name="logoPosition" value="bottom-left">
+                                        <i class="bi bi-arrow-down-left"></i>
+                                    </label>
+                                    <label class="position-option" data-position="bottom-center">
+                                        <input type="radio" name="logoPosition" value="bottom-center">
+                                        <i class="bi bi-arrow-down"></i>
+                                    </label>
+                                    <label class="position-option" data-position="bottom-right">
+                                        <input type="radio" name="logoPosition" value="bottom-right">
+                                        <i class="bi bi-arrow-down-right"></i>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="config-actions">
+                            <button class="btn-modern btn-primary-custom" onclick="saveSettings()">
+                                <i class="bi bi-check-circle"></i>
+                                حفظ الإعدادات
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -139,8 +376,12 @@
         </footer>
     </div>
 
+    <!-- jQuery -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.0/dist/jquery.min.js"></script>
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <!-- Custom JS -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zerotech - إدارة المنتجات</title>
+    <title>Zerotech - إدارة النظام</title>
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,6 +14,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
     <!-- Custom CSS -->
     <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet">
 </head>
@@ -31,16 +33,21 @@
             <div class="container">
                 <div class="nav-content">
                     <div class="logo-section">
-                        <div class="logo-icon">
-                            <i class="bi bi-lightning-charge-fill"></i>
-                        </div>
-                        <span class="logo-text">Zerotech</span>
+                        <img src="{{ url_for('static', filename='uploads/logowhite.png') }}" alt="Zerotech Logo" class="navbar-logo">
                     </div>
                     <div class="nav-links">
+                        <span class="user-badge">
+                            <i class="bi bi-person-circle"></i>
+                            {{ user.username }} ({{ 'مدير' if user.role == 'admin' else 'مستخدم' }})
+                        </span>
                         <a href="/" class="nav-link-custom">
                             <i class="bi bi-house-fill"></i>
-                            <span>الصفحة الرئيسية</span>
+                            <span>الرئيسية</span>
                         </a>
+                        <button class="nav-link-custom" onclick="logout()">
+                            <i class="bi bi-box-arrow-right"></i>
+                            <span>خروج</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -51,9 +58,9 @@
             <div class="container">
                 <div class="hero-content">
                     <h1 class="hero-title">
-                        <span class="title-accent">إدارة</span> المنتجات
+                        <span class="title-accent">لوحة</span> التحكم
                     </h1>
-                    <p class="hero-subtitle">أضف وعدّل واحذف المنتجات بسهولة</p>
+                    <p class="hero-subtitle">إدارة المنتجات والفئات والمستخدمين والشعارات</p>
                 </div>
             </div>
         </section>
@@ -69,65 +76,209 @@
                     </div>
                 </div>
 
-                <!-- Stats Cards -->
-                <div class="stats-row" id="statsRow">
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="bi bi-box-seam-fill"></i>
+                <!-- Tabs Navigation -->
+                <div class="admin-tabs">
+                    <button class="tab-btn active" data-tab="products">
+                        <i class="bi bi-box-seam-fill"></i>
+                        المنتجات
+                    </button>
+                    <button class="tab-btn" data-tab="categories">
+                        <i class="bi bi-folder-fill"></i>
+                        الفئات
+                    </button>
+                    <button class="tab-btn" data-tab="users">
+                        <i class="bi bi-people-fill"></i>
+                        المستخدمين
+                    </button>
+                    <button class="tab-btn" data-tab="logos">
+                        <i class="bi bi-image-fill"></i>
+                        الشعارات
+                    </button>
+                </div>
+
+                <!-- Products Tab -->
+                <div class="tab-content active" id="products-tab">
+                    <div class="glass-card">
+                        <div class="card-header-custom">
+                            <div class="header-icon">
+                                <i class="bi bi-box-seam-fill"></i>
+                            </div>
+                            <div class="header-text">
+                                <h3>قائمة المنتجات</h3>
+                                <p>إدارة جميع المنتجات المسجلة</p>
+                            </div>
+                            <button class="btn-modern btn-primary-custom" onclick="openProductModal()">
+                                <i class="bi bi-plus-lg"></i>
+                                <span>إضافة منتج</span>
+                            </button>
                         </div>
-                        <div class="stat-info">
-                            <span class="stat-value" id="totalProducts">0</span>
-                            <span class="stat-label">إجمالي المنتجات</span>
+                        
+                        <!-- Table Controls -->
+                        <div class="table-controls">
+                            <div class="search-box">
+                                <input type="text" id="productsSearch" placeholder="بحث في المنتجات..." onkeyup="filterProducts()">
+                                <i class="bi bi-search"></i>
+                            </div>
+                            <div class="per-page-select">
+                                <label>عرض:</label>
+                                <select id="productsPerPage" onchange="changeProductsPerPage()">
+                                    <option value="5">5</option>
+                                    <option value="10" selected>10</option>
+                                    <option value="15">15</option>
+                                    <option value="25">25</option>
+                                </select>
+                            </div>
                         </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon stat-icon-green">
-                            <i class="bi bi-tags-fill"></i>
+                        
+                        <div class="table-wrapper">
+                            <table class="modern-table" id="productsTable">
+                                <thead>
+                                    <tr>
+                                        <th>الكود</th>
+                                        <th>اسم المنتج</th>
+                                        <th>المواصفات</th>
+                                        <th>السعر</th>
+                                        <th>الفئة</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
                         </div>
-                        <div class="stat-info">
-                            <span class="stat-value" id="totalCategories">0</span>
-                            <span class="stat-label">الفئات</span>
-                        </div>
+                        
+                        <!-- Pagination -->
+                        <div class="pagination-wrapper" id="productsPagination"></div>
                     </div>
                 </div>
 
-                <!-- Products Table Card -->
-                <div class="glass-card">
-                    <div class="card-header-custom">
-                        <div class="header-icon">
-                            <i class="bi bi-table"></i>
+                <!-- Categories Tab -->
+                <div class="tab-content" id="categories-tab">
+                    <div class="glass-card">
+                        <div class="card-header-custom">
+                            <div class="header-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                                <i class="bi bi-folder-fill"></i>
+                            </div>
+                            <div class="header-text">
+                                <h3>الفئات</h3>
+                                <p>إدارة فئات المنتجات</p>
+                            </div>
+                            <button class="btn-modern btn-primary-custom" onclick="openCategoryModal()">
+                                <i class="bi bi-plus-lg"></i>
+                                <span>إضافة فئة</span>
+                            </button>
                         </div>
-                        <div class="header-text">
-                            <h3>قائمة المنتجات</h3>
-                            <p>جميع المنتجات المسجلة في النظام</p>
+                        
+                        <!-- Table Controls -->
+                        <div class="table-controls">
+                            <div class="search-box">
+                                <input type="text" id="categoriesSearch" placeholder="بحث في الفئات..." onkeyup="filterCategories()">
+                                <i class="bi bi-search"></i>
+                            </div>
+                            <div class="per-page-select">
+                                <label>عرض:</label>
+                                <select id="categoriesPerPage" onchange="changeCategoriesPerPage()">
+                                    <option value="5">5</option>
+                                    <option value="10" selected>10</option>
+                                    <option value="15">15</option>
+                                    <option value="25">25</option>
+                                </select>
+                            </div>
                         </div>
-                        <button class="btn-modern btn-primary-custom" onclick="openNewProductModal()">
-                            <i class="bi bi-plus-lg"></i>
-                            <span>إضافة منتج</span>
-                        </button>
+                        
+                        <div class="table-wrapper">
+                            <table class="modern-table" id="categoriesTable">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>اسم الفئة</th>
+                                        <th>تاريخ الإنشاء</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        <div class="pagination-wrapper" id="categoriesPagination"></div>
                     </div>
-                    
-                    <div class="table-wrapper">
-                        <table class="modern-table" id="productsTable">
-                            <thead>
-                                <tr>
-                                    <th><i class="bi bi-hash"></i> الكود</th>
-                                    <th><i class="bi bi-box"></i> اسم المنتج</th>
-                                    <th><i class="bi bi-list-check"></i> المواصفات</th>
-                                    <th><i class="bi bi-currency-dollar"></i> السعر</th>
-                                    <th><i class="bi bi-folder"></i> الفئة</th>
-                                    <th><i class="bi bi-gear"></i> الإجراءات</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td colspan="6" class="text-center loading-cell">
-                                        <div class="spinner-small"></div>
-                                        جاري التحميل...
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                </div>
+
+                <!-- Users Tab -->
+                <div class="tab-content" id="users-tab">
+                    <div class="glass-card">
+                        <div class="card-header-custom">
+                            <div class="header-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+                                <i class="bi bi-people-fill"></i>
+                            </div>
+                            <div class="header-text">
+                                <h3>المستخدمين</h3>
+                                <p>إدارة مستخدمي النظام</p>
+                            </div>
+                            <button class="btn-modern btn-primary-custom" onclick="openUserModal()">
+                                <i class="bi bi-plus-lg"></i>
+                                <span>إضافة مستخدم</span>
+                            </button>
+                        </div>
+                        
+                        <!-- Table Controls -->
+                        <div class="table-controls">
+                            <div class="search-box">
+                                <input type="text" id="usersSearch" placeholder="بحث في المستخدمين..." onkeyup="filterUsers()">
+                                <i class="bi bi-search"></i>
+                            </div>
+                            <div class="per-page-select">
+                                <label>عرض:</label>
+                                <select id="usersPerPage" onchange="changeUsersPerPage()">
+                                    <option value="5">5</option>
+                                    <option value="10" selected>10</option>
+                                    <option value="15">15</option>
+                                    <option value="25">25</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="table-wrapper">
+                            <table class="modern-table" id="usersTable">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>اسم المستخدم</th>
+                                        <th>الاسم الكامل</th>
+                                        <th>البريد</th>
+                                        <th>الهاتف</th>
+                                        <th>الصلاحية</th>
+                                        <th>الحالة</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        <div class="pagination-wrapper" id="usersPagination"></div>
+                    </div>
+                </div>
+
+                <!-- Logos Tab -->
+                <div class="tab-content" id="logos-tab">
+                    <div class="glass-card">
+                        <div class="card-header-custom">
+                            <div class="header-icon" style="background: linear-gradient(135deg, #ec4899, #db2777);">
+                                <i class="bi bi-image-fill"></i>
+                            </div>
+                            <div class="header-text">
+                                <h3>الشعارات</h3>
+                                <p>إدارة شعارات الكروت</p>
+                            </div>
+                            <button class="btn-modern btn-primary-custom" onclick="openLogoUploadModal()">
+                                <i class="bi bi-cloud-upload"></i>
+                                <span>رفع شعار</span>
+                            </button>
+                        </div>
+                        
+                        <div class="logos-grid" id="logosGrid"></div>
                     </div>
                 </div>
             </div>
@@ -142,7 +293,7 @@
     </div>
 
     <!-- Product Modal -->
-    <div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
+    <div class="modal fade" id="productModal" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content modal-modern">
                 <div class="modal-header modal-header-custom">
@@ -150,9 +301,9 @@
                         <div class="modal-icon">
                             <i class="bi bi-box-seam-fill"></i>
                         </div>
-                        <h5 class="modal-title" id="productModalLabel">إضافة منتج جديد</h5>
+                        <h5 class="modal-title" id="productModalTitle">إضافة منتج جديد</h5>
                     </div>
-                    <button type="button" class="btn-close-custom" data-bs-dismiss="modal" aria-label="Close">
+                    <button type="button" class="btn-close-custom" data-bs-dismiss="modal">
                         <i class="bi bi-x-lg"></i>
                     </button>
                 </div>
@@ -160,73 +311,171 @@
                     <div class="modal-body modal-body-custom">
                         <div class="form-grid">
                             <div class="input-wrapper">
-                                <label class="input-label">
-                                    <i class="bi bi-upc-scan"></i>
-                                    كود المنتج <span class="required">*</span>
-                                </label>
+                                <label class="input-label">كود المنتج <span class="required">*</span></label>
                                 <input type="text" class="modern-input" id="productCode" required>
                             </div>
                             <div class="input-wrapper">
-                                <label class="input-label">
-                                    <i class="bi bi-box"></i>
-                                    اسم المنتج <span class="required">*</span>
-                                </label>
+                                <label class="input-label">اسم المنتج <span class="required">*</span></label>
                                 <input type="text" class="modern-input" id="productName" required>
                             </div>
                             <div class="input-wrapper">
-                                <label class="input-label">
-                                    <i class="bi bi-currency-dollar"></i>
-                                    السعر (جنيه) <span class="required">*</span>
-                                </label>
+                                <label class="input-label">السعر (جنيه) <span class="required">*</span></label>
                                 <input type="number" class="modern-input" id="productPrice" step="0.01" min="0" required>
                             </div>
                             <div class="input-wrapper">
-                                <label class="input-label">
-                                    <i class="bi bi-folder"></i>
-                                    الفئة
-                                </label>
-                                <input type="text" class="modern-input" id="productCategory" placeholder="مثال: إكسسوارات">
+                                <label class="input-label">الفئة</label>
+                                <select class="modern-input select2-category" id="productCategory"></select>
                             </div>
                             <div class="input-wrapper full-width">
-                                <label class="input-label">
-                                    <i class="bi bi-list-check"></i>
-                                    المواصفات
-                                </label>
-                                <textarea class="modern-input modern-textarea" id="productSpecs" rows="2" placeholder="مثال: إضاءة RGB – 7200 DPI – USB"></textarea>
+                                <label class="input-label">المواصفات</label>
+                                <textarea class="modern-input modern-textarea" id="productSpecs" rows="2"></textarea>
                             </div>
                             <div class="input-wrapper full-width">
-                                <label class="input-label">
-                                    <i class="bi bi-text-paragraph"></i>
-                                    الوصف
-                                </label>
-                                <textarea class="modern-input modern-textarea" id="productDescription" rows="2" placeholder="وصف تفصيلي للمنتج"></textarea>
-                            </div>
-                            <div class="input-wrapper full-width">
-                                <label class="input-label">
-                                    <i class="bi bi-image"></i>
-                                    رابط الشعار
-                                </label>
-                                <input type="text" class="modern-input" id="productLogoUrl" placeholder="logo.png" value="logo.png">
+                                <label class="input-label">الوصف</label>
+                                <textarea class="modern-input modern-textarea" id="productDescription" rows="2"></textarea>
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer modal-footer-custom">
-                        <button type="button" class="btn-modern btn-secondary-custom" data-bs-dismiss="modal">
-                            <i class="bi bi-x-circle"></i>
-                            <span>إلغاء</span>
-                        </button>
-                        <button type="submit" class="btn-modern btn-primary-custom" id="submitBtn">
-                            <i class="bi bi-check-circle"></i>
-                            <span>إضافة</span>
-                        </button>
+                        <button type="button" class="btn-modern btn-secondary-custom" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="submit" class="btn-modern btn-primary-custom" id="productSubmitBtn">إضافة</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
+    <!-- Category Modal -->
+    <div class="modal fade" id="categoryModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-modern">
+                <div class="modal-header modal-header-custom">
+                    <div class="modal-title-wrapper">
+                        <div class="modal-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                            <i class="bi bi-folder-fill"></i>
+                        </div>
+                        <h5 class="modal-title" id="categoryModalTitle">إضافة فئة جديدة</h5>
+                    </div>
+                    <button type="button" class="btn-close-custom" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <form id="categoryForm">
+                    <div class="modal-body modal-body-custom">
+                        <div class="input-wrapper">
+                            <label class="input-label">اسم الفئة <span class="required">*</span></label>
+                            <input type="text" class="modern-input" id="categoryName" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer modal-footer-custom">
+                        <button type="button" class="btn-modern btn-secondary-custom" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="submit" class="btn-modern btn-primary-custom" id="categorySubmitBtn">إضافة</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Modal -->
+    <div class="modal fade" id="userModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content modal-modern">
+                <div class="modal-header modal-header-custom">
+                    <div class="modal-title-wrapper">
+                        <div class="modal-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
+                        <h5 class="modal-title" id="userModalTitle">إضافة مستخدم جديد</h5>
+                    </div>
+                    <button type="button" class="btn-close-custom" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <form id="userForm">
+                    <input type="hidden" id="userId" value="">
+                    <div class="modal-body modal-body-custom">
+                        <div class="form-grid">
+                            <div class="input-wrapper">
+                                <label class="input-label">اسم المستخدم <span class="required">*</span></label>
+                                <input type="text" class="modern-input" id="userName" required>
+                            </div>
+                            <div class="input-wrapper">
+                                <label class="input-label">كلمة المرور <span class="required" id="passwordRequired">*</span></label>
+                                <input type="password" class="modern-input" id="userPassword">
+                                <small class="form-hint" id="passwordHint" style="display: none;">اتركه فارغاً للاحتفاظ بكلمة المرور الحالية</small>
+                            </div>
+                            <div class="input-wrapper">
+                                <label class="input-label">الاسم الكامل</label>
+                                <input type="text" class="modern-input" id="userFullName">
+                            </div>
+                            <div class="input-wrapper">
+                                <label class="input-label">البريد الإلكتروني</label>
+                                <input type="email" class="modern-input" id="userEmail">
+                            </div>
+                            <div class="input-wrapper">
+                                <label class="input-label">رقم الهاتف</label>
+                                <input type="tel" class="modern-input" id="userPhone">
+                            </div>
+                            <div class="input-wrapper">
+                                <label class="input-label">الصلاحية</label>
+                                <select class="modern-input" id="userRole">
+                                    <option value="user">مستخدم عادي</option>
+                                    <option value="admin">مدير</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer modal-footer-custom">
+                        <button type="button" class="btn-modern btn-secondary-custom" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="submit" class="btn-modern btn-primary-custom" id="userSubmitBtn">إضافة</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logo Upload Modal -->
+    <div class="modal fade" id="logoModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-modern">
+                <div class="modal-header modal-header-custom">
+                    <div class="modal-title-wrapper">
+                        <div class="modal-icon" style="background: linear-gradient(135deg, #ec4899, #db2777);">
+                            <i class="bi bi-cloud-upload"></i>
+                        </div>
+                        <h5 class="modal-title">رفع شعار جديد</h5>
+                    </div>
+                    <button type="button" class="btn-close-custom" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <form id="logoForm" enctype="multipart/form-data">
+                    <div class="modal-body modal-body-custom">
+                        <div class="input-wrapper">
+                            <label class="input-label">اسم الشعار</label>
+                            <input type="text" class="modern-input" id="logoName" placeholder="اختياري">
+                        </div>
+                        <div class="input-wrapper">
+                            <label class="input-label">ملف الشعار <span class="required">*</span></label>
+                            <input type="file" class="modern-input" id="logoFile" accept="image/*" required>
+                        </div>
+                        <div class="logo-preview" id="logoPreview"></div>
+                    </div>
+                    <div class="modal-footer modal-footer-custom">
+                        <button type="button" class="btn-modern btn-secondary-custom" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="submit" class="btn-modern btn-primary-custom">رفع</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- jQuery -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.0/dist/jquery.min.js"></script>
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <!-- Custom JS -->
     <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
 </body>
