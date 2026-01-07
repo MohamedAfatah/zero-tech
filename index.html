@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>Zerotech - كروت الأسعار</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  direction: rtl;
+  background: #f4f4f4;
+  margin: 0;
+  padding: 0;
+}
+
+/* واجهة إدخال الأكواد */
+.controls {
+  margin: 10px;
+}
+
+input {
+  padding: 8px;
+  width: 180px;
+  margin: 4px;
+}
+
+button {
+  padding: 8px 15px;
+  margin: 5px;
+  cursor: pointer;
+}
+
+/* الحاوية للكروت */
+.labels {
+  display: grid;
+  grid-template-columns: repeat(2, 10.5cm); /* 2 كارت في الصف */
+  grid-template-rows: repeat(2, 14.8cm);   /* 2 صف = 4 كروت */
+  gap: 0; /* بدون مسافات إضافية */
+  margin: 0;
+  padding: 0;
+}
+
+/* تصميم كل كارت */
+.label {
+  width: 10.5cm;
+  height: 14.8cm;
+  background: linear-gradient(135deg, #1e3c72, #2a5298);
+  color: white;
+  border-radius: 0.5cm;
+  padding: 0.5cm;
+  text-align: center;
+  box-sizing: border-box;
+  page-break-inside: avoid; /* منع انكسار الكارت */
+}
+
+.logo {
+  height: 40px;
+  margin-bottom: 8px;
+}
+
+.product-name {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.specs {
+  font-size: 13px;
+  margin: 6px 0;
+}
+
+.price {
+  font-size: 28px;
+  font-weight: bold;
+}
+
+/* CSS للطباعة */
+@media print {
+  body * { visibility: hidden; }
+  .labels, .labels * { visibility: visible; }
+
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+}
+</style>
+</head>
+<body>
+
+<h2>نظام كروت الأسعار - Zerotech</h2>
+
+<div class="controls">
+  <input class="code" placeholder="كود المنتج 1">
+  <input class="code" placeholder="كود المنتج 2">
+  <input class="code" placeholder="كود المنتج 3">
+  <input class="code" placeholder="كود المنتج 4">
+  <br>
+  <button onclick="generateLabels()">توليد الكروت</button>
+  <button onclick="window.print()">🖨️ طباعة</button>
+</div>
+
+<div class="labels" id="labels"></div>
+
+<script>
+// قاعدة بيانات المنتجات
+const products = [
+  { code: "1001", name: "Mouse Gaming RGB", specs: "إضاءة RGB – 7200 DPI – USB", price: 350 },
+  { code: "1002", name: "Mechanical Keyboard", specs: "Blue Switch – Anti-Ghosting", price: 1200 },
+  { code: "1003", name: "Headset Gaming", specs: "7.1 Surround – Mic HD", price: 850 },
+  { code: "1004", name: "Webcam HD", specs: "1080p – USB – Mic Built-in", price: 500 }
+];
+
+// توليد الكروت بعد إدخال الأكواد
+function generateLabels() {
+  const inputs = document.querySelectorAll(".code");
+  const container = document.getElementById("labels");
+  container.innerHTML = ""; // مسح أي كروت موجودة
+
+  let count = 0;
+  inputs.forEach(input => {
+    const code = input.value.trim();
+    if (!code) return;
+
+    const product = products.find(p => p.code === code);
+    if (!product) {
+      alert("الكود " + code + " غير موجود!");
+      return;
+    }
+
+    if (count < 4) { // 4 كروت فقط
+      const card = document.createElement("div");
+      card.className = "label";
+      card.innerHTML = `
+        <img src="logo.png" class="logo">
+        <div class="product-name">${product.name}</div>
+        <div class="specs">${product.specs}</div>
+        <div class="price">${product.price} جنيه</div>
+      `;
+      container.appendChild(card);
+      count++;
+    }
+  });
+}
+</script>
+
+</body>
+</html>
